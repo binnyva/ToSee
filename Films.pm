@@ -23,7 +23,7 @@ sub new {
 	my $self = bless({}, $package);
 	
  	@{$self->{'locations'}} = @all_locations;
-	$self->{'index'} = 0;
+	$self->{'index'} = -1;
 	$self->{'movies'} = [];
 	
 	$self->findMovies();
@@ -51,12 +51,14 @@ sub findMoviesInFolder {
 	my @files = glob("*");
 	
 	foreach my $f (@files) {
+		my $full_path = File::Spec->join($path, $f);
 		my ($name,$ext);
 		
-		if(-d $f) {
-			($name,$ext) = fileparse($f);
+		if(-d $full_path) { #Its a folder - get name.
+			$name = basename($f);
 			$ext = 'dir';
-		} elsif($f =~ /([^\/]+)\.([^\.]+)$/) {
+		
+		} elsif($f =~ /([^\/]+)\.([^\.]+)$/) { #Find the name and extention of the file
 			$name	= $1;
 			$ext	= lc($2);
 		}
@@ -72,9 +74,36 @@ sub findMoviesInFolder {
 				$name = $2;
 			}
 			
-			# :TODO: Get the extact file path if the $ext is 'dir'
-			
-			my $details = $self->getMovieDetails($name, File::Spec->join($path, $f), $ext);
+			# Get the extact file path if the $ext is 'dir'
+			if($ext eq 'dir') {
+				chdir($full_path);
+				my @all_files = sort(glob("*"));
+				my $found_videos = 0;
+				my $found_video_path;
+				my $found_video_ext;
+				foreach my $vf (@all_files) {
+					my($fname,$fext);
+					
+					if($vf =~ /([^\/]+)\.([^\.]+)$/) {
+						$fname	= $1;
+						$fext	= lc($2);
+					}
+					
+					#Cool - we got a video file in the folder
+					if($allowed_extensions{$fext}) { # Got a file with a valid extention
+						$found_videos++;
+						$found_video_path = File::Spec->join($full_path, $vf);
+						$found_video_ext = $fext;
+					}
+				}
+				# Set it as a file only if there is 1 video in the folder - if there is more than 1, open the folder.
+				if($found_videos == 1) {
+					$full_path = $found_video_path;
+					$ext = $found_video_ext;
+				}
+			}
+						
+			my $details = $self->getMovieDetails($name, $full_path, $ext);
 			$self->addMovie($details);
 		}
 

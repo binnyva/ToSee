@@ -47,6 +47,7 @@ while(my $ref = $movies->getFilm()) {
 	
 	my $film = $film_details{'name'};
 	
+	#Show the poster if the poster image file exists
 	if(-e 'Posters/' . $film . '.jpg') {
 		my $img_poster = Gtk2::Image->new();
 		$img_poster->set_from_file('Posters/' . $film . '.jpg');
@@ -90,7 +91,8 @@ sub seeFilm {
 	my @data = shift;
 	my %film = %{$data[0][1]};
 	$w->destroy;
-	print "Seeing film \"" . $film{'name'} . "\"\n";
+	my $tiker_status = "Seeing film \"" . $film{'name'} . "\"\n";
+	`tiker $tiker_status`;
 	
 	if($film{'type'} ne 'dir') {
 		exec $video_player, $film{'path'}; 
@@ -100,3 +102,6 @@ sub seeFilm {
 	
 }
 
+###################################### TODO ###########################################
+# Get rating from IMDB, show it
+# Genre
