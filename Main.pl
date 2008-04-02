@@ -9,8 +9,6 @@ use Films;
 use Cwd;
 
 ## Init
-my $video_player = 'smplayer';
-my $file_manager = 'konqueror';
 my $home_folder = dirname($0);
 $home_folder = getcwd() if($home_folder eq '.');
 
@@ -90,18 +88,11 @@ sub seeFilm {
 	my $button = shift;
 	my @data = shift;
 	my %film = %{$data[0][1]};
-	$w->destroy;
-	my $tiker_status = "Seeing film \"" . $film{'name'} . "\"\n";
-	`tiker $tiker_status`;
-	
-	if($film{'type'} ne 'dir') {
-		exec $video_player, $film{'path'}; 
-	} else {
-		exec $file_manager, $film{'path'}; 
-	}
-	
+	$movies->openFilm(%film);
 }
 
 ###################################### TODO ###########################################
 # Get rating from IMDB, show it
 # Genre
+# File size
+# Running time

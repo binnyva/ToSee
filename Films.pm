@@ -16,8 +16,6 @@ BEGIN {
 }
 use vars qw();
 
-my($index, @locations, @movies);
-
 sub new {
 	my ($package,@all_locations) = @_;
 	my $self = bless({}, $package);
@@ -25,6 +23,9 @@ sub new {
  	@{$self->{'locations'}} = @all_locations;
 	$self->{'index'} = -1;
 	$self->{'movies'} = [];
+	
+	$self->{'video_player'} = 'smplayer';
+	$self->{'file_manager'} = 'konqueror';
 	
 	$self->findMovies();
 	return $self;
@@ -170,6 +171,20 @@ sub cachePosters {
 			print "Something wrong: ".$film_details->error;
 		}
 	}
+}
+
+sub openFilm {
+	my ($self, %film) = @_;
+	my $tiker_status = 'Seeing film "' . $film{'name'} . '"' . "\n";
+	`tiker $tiker_status`;
+	
+	if($film{'type'} ne 'dir') {
+		system $self->{'file_manager'} . ' "' . dirname($film{'path'}) . '" &'; # Open the folder
+		exec $self->{'video_player'}, $film{'path'}; # and play the file
+	} else {
+		exec $self->{'file_manager'}, $film{'path'};
+	}
+	
 }
 
 1;
