@@ -19,8 +19,7 @@ my @locations = (
 	'/mnt/m/Films',
 	'/mnt/n/Films',
 	'/mnt/o/Films',
-	'/mnt/p/Films',
-	'/mnt/p/Torrent/Films');
+	'/mnt/p/Films');
 my $movies = new Films(@locations);
 my $total_films = $movies->getTotal();
 

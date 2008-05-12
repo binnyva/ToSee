@@ -48,7 +48,7 @@ sub findMoviesInFolder {
 	
 	chdir($path) or return;
 	
-	my %allowed_extensions = ('avi'=>1,'mpg'=>1,'mpeg'=>1,'mkv'=>1,'dir'=>1, 'mp4'=>1 );
+	my %allowed_extensions = ('avi'=>1,'mpg'=>1,'mpeg'=>1,'mkv'=>1,'dir'=>1, 'mp4'=>1, 'divx'=>1 );
 	my @files = glob("*");
 	
 	foreach my $f (@files) {
@@ -158,14 +158,24 @@ sub cachePosters {
 		my $film = $film_details{'name'};
 		next if(-e File::Spec->join($poster_folder, $film . ".jpg")); #If We already have the cover, skip it.
 		
-		my $film_details = new IMDB::Film(crit => $film,timeout => 2, cache => 1, cache_root => '/tmp/imdb_cache', cache_exp => '30 d');
+		my $film_details = new IMDB::Film(crit => $film, timeout => 60, 
+					cache => 1, cache_root => '/tmp/imdb_cache', cache_exp => '30 d');
 		if($film_details->status) {
-			my $url = $film_details->cover;	
+			my $url = $film_details->cover;
+			my $image_file = File::Spec->join($poster_folder, $film . ".jpg");
+			unless($url) { # Film ain't got a poster, mate!
+				symlink(File::Spec->join($poster_folder, "NoPoster.jpg"), $image_file); #So, we put up a no poster image.
+				next;
+			}
 			
 			my $cover_image = get($url);
-			open(IMG_OUT, ">" . File::Spec->join($poster_folder, $film . ".jpg")) or die("Cannot write image file: $!");
+			open(IMG_OUT, ">" . $image_file) or die("Cannot write image file: $!");
 			print IMG_OUT $cover_image;
 			close(IMG_OUT);
+			my @file_stats = stat($image_file);
+			print $file_stats[7] . ':' . $url . "\n";
+			
+			unlink($image_file) if($file_stats[7] == 0); #Delete the file if the file size is 0 - its not downloaded properly.
 			
 		} else {
 			print "Something wrong: ".$film_details->error;
