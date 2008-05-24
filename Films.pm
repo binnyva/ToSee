@@ -75,6 +75,8 @@ sub findMoviesInFolder {
 				$name = $2;
 			}
 			
+			my @file_details;
+			my $size = 0;
 			# Get the extact file path if the $ext is 'dir'
 			if($ext eq 'dir') {
 				chdir($full_path);
@@ -82,6 +84,7 @@ sub findMoviesInFolder {
 				my $found_videos = 0;
 				my $found_video_path;
 				my $found_video_ext;
+				
 				foreach my $vf (@all_files) {
 					my($fname,$fext);
 					
@@ -89,6 +92,9 @@ sub findMoviesInFolder {
 						$fname	= $1;
 						$fext	= lc($2);
 					}
+					
+					@file_details = stat($vf);
+					$size = $size + $file_details[7];
 					
 					#Cool - we got a video file in the folder
 					if($allowed_extensions{$fext}) { # Got a file with a valid extention
@@ -102,9 +108,12 @@ sub findMoviesInFolder {
 					$full_path = $found_video_path;
 					$ext = $found_video_ext;
 				}
+			} else {
+				@file_details = stat($full_path);
+				$size = $file_details[7];
 			}
-						
-			my $details = $self->getMovieDetails($name, $full_path, $ext);
+			
+			my $details = $self->getMovieDetails($name, $full_path, int($size/(1024*1024)), $ext);
 			$self->addMovie($details);
 		}
 
@@ -115,9 +124,10 @@ sub getMovieDetails {
 	my $self = shift;
 	my $name = shift;
 	my $path = shift;
+	my $size = shift;
 	my $ext  = shift;
 	
-	return {'name'=>$name, 'path'=>$path, 'type'=>$ext};
+	return {'name'=>$name, 'path'=>$path, 'type'=>$ext, 'size'=>$size};
 }
 
 sub addMovie {
@@ -195,6 +205,16 @@ sub openFilm {
 		exec $self->{'file_manager'}, $film{'path'};
 	}
 	
+}
+
+sub openContainingFolder {
+	my ($self, %film) = @_;
+	
+	if($film{'type'} ne 'dir') {
+		system $self->{'file_manager'} . ' "' . dirname($film{'path'}) . '" &'; # Open the folder
+	} else {
+		exec $self->{'file_manager'}, $film{'path'};
+	}
 }
 
 1;

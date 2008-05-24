@@ -28,6 +28,8 @@ my $w = Gtk2::Window->new('toplevel');
 $w->signal_connect(delete_event => \&deleteEvent);
 $w->signal_connect(destroy => sub { Gtk2->main_quit; });
 
+my $ttip_all = Gtk2::Tooltips->new();
+
 my $rows = POSIX::ceil($total_films / 5);
 my $tab_layout = Gtk2::Table->new($rows, 5, FALSE);
 $w->add($tab_layout);
@@ -44,19 +46,34 @@ while(my $ref = $movies->getFilm()) {
 	
 	my $film = $film_details{'name'};
 	
+	my $but_film = Gtk2::Button->new($film);
+	$ttip_all->set_tip($but_film, $film); #Set the title as the tooltip
+	
 	#Show the poster if the poster image file exists
 	if(-e 'Posters/' . $film . '.jpg') {
 		my $img_poster = Gtk2::Image->new();
 		$img_poster->set_from_file('Posters/' . $film . '.jpg');
-		$vbox_film->add($img_poster);
-		$img_poster->show;
+		$but_film->set_image($img_poster); #Set the Poster as the Clickable button
+		$but_film->set_label('');#And remove the title - if we have a poster
 	}
 	
-	my $but_film = Gtk2::Button->new($film);
 	$but_film->signal_connect(clicked => \&seeFilm, [$w, \%film_details]);
-	
 	$vbox_film->add($but_film);
 	$but_film->show;
+	
+	my $but_film_location = Gtk2::Button->new("Open Folder");
+	$ttip_all->set_tip($but_film_location, $film_details{'path'}); #Set the title as the tooltip
+	$but_film_location->signal_connect(clicked => \&openContainingFolder, [$w, \%film_details]);
+	$vbox_film->add($but_film_location);
+	$but_film_location->show;
+	
+	my $lab_film_details = Gtk2::Label->new("Size: " . $film_details{'size'} . ' MB');
+	$vbox_film->add($lab_film_details);
+	$lab_film_details->show;
+	
+	my $hsep_down = Gtk2::HSeparator->new();
+	$vbox_film->add($hsep_down);
+	$hsep_down->show;
 	
 	$tab_layout->attach_defaults($vbox_film, $current_col, $current_col+1, $current_row, $current_row+1);
 	$vbox_film->show;
@@ -88,6 +105,13 @@ sub seeFilm {
 	my @data = shift;
 	my %film = %{$data[0][1]};
 	$movies->openFilm(%film);
+}
+
+sub openContainingFolder {
+	my $button = shift;
+	my @data = shift;
+	my %film = %{$data[0][1]};
+	$movies->openContainingFolder(%film);
 }
 
 ###################################### TODO ###########################################
