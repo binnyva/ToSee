@@ -15,23 +15,23 @@ $home_folder = getcwd() if($home_folder eq '.');
 my @locations = (
 	'/var/Data/Films',
 	'/mnt/c/Films',
+	'/mnt/d/Films',
 	'/mnt/e/Films',
-	'/mnt/m/Films',
-	'/mnt/n/Films',
-	'/mnt/o/Films',
-	'/mnt/p/Films');
+	'/mnt/x/Films',
+	'/mnt/x/Torrent/Films');
 my $movies = new Films(@locations);
 my $total_films = $movies->getTotal();
 
 ################################# GUI Building Part #################################
+my $max_cols = 6;
 my $w = Gtk2::Window->new('toplevel');
 $w->signal_connect(delete_event => \&deleteEvent);
 $w->signal_connect(destroy => sub { Gtk2->main_quit; });
 
 my $ttip_all = Gtk2::Tooltips->new();
 
-my $rows = POSIX::ceil($total_films / 5);
-my $tab_layout = Gtk2::Table->new($rows, 5, FALSE);
+my $rows = POSIX::ceil($total_films / $max_cols);
+my $tab_layout = Gtk2::Table->new($rows, $max_cols, FALSE);
 $w->add($tab_layout);
 
 my $current_row = 0;
@@ -80,7 +80,7 @@ while(my $ref = $movies->getFilm()) {
 	
 	$current_col++;
 	
-	if($current_col == 5) {
+	if($current_col == $max_cols) {
 		$current_row++;
 		$current_col = 0;
 	}

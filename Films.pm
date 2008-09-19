@@ -68,7 +68,7 @@ sub findMoviesInFolder {
 		if($allowed_extensions{$ext}) {
 			$name =~ s/[_\.]/ /g; #Convert _ and . to space
 			$name =~ s/(dvdrip|divx|xvid|axxo).*$//i; #Remove unwanted video details in the name
-			$name =~ s/\s*[\(\[]?\d{4}[\)\]]//; #Remove year if given
+			$name =~ s/[\[\(].+?[\)\]]//g; #Remove Language
 			$name =~ s/\s*[\[\(\{]\s*$//g; #Remove junk that still exists
 			
 			if($name =~ /(.+) \- (.+)/) { # Sometimes directors name gets included in the title - like this 'Akira Kurosawa - Rashomon.avi'
