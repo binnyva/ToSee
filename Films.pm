@@ -63,7 +63,7 @@ sub findMoviesInFolder {
 			$name	= $1;
 			$ext	= lc($2);
 		}
-		next if($name eq 'To See');
+		next if($name eq 'To See' || $name eq 'Give Bijoy');
 		
 		if($allowed_extensions{$ext}) {
 			$name =~ s/[_\.]/ /g; #Convert _ and . to space
