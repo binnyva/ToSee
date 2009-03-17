@@ -161,36 +161,56 @@ sub cachePosters {
 	
 	my $poster_folder = File::Spec->join($home_folder, 'Posters');
 	
-	use LWP::Simple;
-	
 	foreach my $ref (@{$self->{'movies'}}) {
 		my %film_details = %{$ref};
 		my $film = $film_details{'name'};
 		next if(-e File::Spec->join($poster_folder, $film . ".jpg")); #If We already have the cover, skip it.
 		
-		my $film_details = new IMDB::Film(crit => $film, timeout => 60, 
-					cache => 1, cache_root => '/tmp/imdb_cache', cache_exp => '30 d');
-		if($film_details->status) {
-			my $url = $film_details->cover;
-			my $image_file = File::Spec->join($poster_folder, $film . ".jpg");
+		my $film_poster = $self->getPoster($film, $poster_folder);
+	}
+}
+
+sub getPoster {
+	my ($self, $film, $poster_folder) = @_;
+	
+	print "Fetching $film ... ";
+	use LWP::Simple;
+	my $film_details = new IMDB::Film(crit => $film, timeout => 60, 
+				cache => 1, cache_root => '/tmp/imdb_cache', cache_exp => '30 d');
+	if($film_details->status) {
+		print "Done\n";
+		my $url = $film_details->cover;
+		my $image_file = '';
+		
+		if($poster_folder) {
+			$image_file = File::Spec->join($poster_folder, $film . ".jpg");
+			
 			unless($url) { # Film ain't got a poster, mate!
 				symlink(File::Spec->join($poster_folder, "NoPoster.jpg"), $image_file); #So, we put up a no poster image.
 				next;
 			}
-			
+		} else {
+			$image_file = File::Spec->join('/tmp/film_posters', $film . ".jpg");
+		}
+		
+		if($url) {
+			print "Fetching Poster $url ... ";
 			my $cover_image = get($url);
 			open(IMG_OUT, ">" . $image_file) or die("Cannot write image file: $!");
 			print IMG_OUT $cover_image;
 			close(IMG_OUT);
-			my @file_stats = stat($image_file);
-			print $file_stats[7] . ':' . $url . "\n";
+			print "Done\n";
 			
+			my @file_stats = stat($image_file);
 			unlink($image_file) if($file_stats[7] == 0); #Delete the file if the file size is 0 - its not downloaded properly.
 			
-		} else {
-			print "Something wrong: ".$film_details->error;
+			return $image_file;
 		}
+	} else {
+		print "Something wrong: ".$film_details->error;
 	}
+	
+	return '';
 }
 
 sub openFilm {
