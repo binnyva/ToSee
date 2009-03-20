@@ -23,15 +23,21 @@ my $total_films = $movies->getTotal();
 
 ################################# GUI Building Part #################################
 my $max_cols = 6;
-my $w = Gtk2::Window->new('toplevel');
+my $w = new Gtk2::Window('toplevel');
 $w->signal_connect(delete_event => \&deleteEvent);
 $w->signal_connect(destroy => sub { Gtk2->main_quit; });
+$w->set_default_size(800, 600);
 
 my $ttip_all = Gtk2::Tooltips->new();
 
 my $rows = POSIX::ceil($total_films / $max_cols);
+
+my $scwin = Gtk2::ScrolledWindow->new();
+$scwin->set_policy('automatic', 'automatic');
+
 my $tab_layout = Gtk2::Table->new($rows, $max_cols, FALSE);
-$w->add($tab_layout);
+$scwin->add_with_viewport($tab_layout);
+$w->add($scwin);
 
 my $current_row = 0;
 my $current_col = 0;
@@ -88,6 +94,7 @@ while(my $ref = $movies->getFilm()) {
 }
 
 $tab_layout->show;
+$scwin->show;
 $w->show;
 
 Gtk2->main;
