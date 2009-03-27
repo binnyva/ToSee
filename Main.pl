@@ -7,22 +7,32 @@ use POSIX;
 use File::Basename;
 use Films;
 use Cwd;
+use Storable;
 
 ## Init
 my $home_folder = dirname($0);
 $home_folder = getcwd() if($home_folder eq '.');
 
-my @locations = (
-	'/var/Data/Films',
-	'/mnt/c/Films',
-	'/mnt/d/Films',
-	'/mnt/x/Films',
-	'/mnt/x/Torrents/Films');
-my $movies = new Films(@locations);
+my $config_file = $home_folder . "/config.data";
+my %opt;
+if(-e $config_file) {
+	%opt = %{retrieve($config_file)};
+	
+} else { # Default Options
+	%opt = (
+		'locations'	=> ['/var/Data/Films','/mnt/c/Films','/mnt/d/Films','/mnt/x/Films','/mnt/x/Torrents/Films'],
+		'show_poster' => 1,
+		'get_posters' => 1,
+		'max_cols' => 6,
+		'video_player_app' => 'smplayer',
+		'file_manager_app' => 'konqueror'
+	);
+}
+
+my $movies = new Films(\%opt);
 my $total_films = $movies->getTotal();
 
 ################################# GUI Building Part #################################
-my $max_cols = 6;
 my $w = new Gtk2::Window('toplevel');
 $w->signal_connect(delete_event => \&deleteEvent);
 $w->signal_connect(destroy => sub { Gtk2->main_quit; });
@@ -30,12 +40,12 @@ $w->set_default_size(800, 600);
 
 my $ttip_all = Gtk2::Tooltips->new();
 
-my $rows = POSIX::ceil($total_films / $max_cols);
+my $rows = POSIX::ceil($total_films / $opt{'max_cols'});
 
 my $scwin = Gtk2::ScrolledWindow->new();
 $scwin->set_policy('automatic', 'automatic');
 
-my $tab_layout = Gtk2::Table->new($rows, $max_cols, FALSE);
+my $tab_layout = Gtk2::Table->new($rows, $opt{'max_cols'}, FALSE);
 $scwin->add_with_viewport($tab_layout);
 $w->add($scwin);
 
@@ -54,14 +64,16 @@ while(my $ref = $movies->getFilm()) {
 	my $but_film = Gtk2::Button->new($film);
 	$ttip_all->set_tip($but_film, $film); #Set the title as the tooltip
 	
-	# Show the poster if the poster image file exists
-	my $poster_image = 'Posters/' . $film . '.jpg';
-	if(-e $poster_image
-			&& ! (-l $poster_image)) { # If the image file is a link, that means no poster. Don't show the image - show the name instead.
-		my $img_poster = Gtk2::Image->new();
-		$img_poster->set_from_file($poster_image);
-		$but_film->set_image($img_poster); #Set the Poster as the Clickable button
-		$but_film->set_label('');#And remove the title - if we have a poster
+	if($opt{'show_poster'}) {
+		# Show the poster if the poster image file exists
+		my $poster_image = 'Posters/' . $film . '.jpg';
+		if(-e $poster_image
+				&& ! (-l $poster_image)) { # If the image file is a link, that means no poster. Don't show the image - show the name instead.
+			my $img_poster = Gtk2::Image->new();
+			$img_poster->set_from_file($poster_image);
+			$but_film->set_image($img_poster); #Set the Poster as the Clickable button
+			$but_film->set_label('');#And remove the title - if we have a poster
+		}
 	}
 	
 	$but_film->signal_connect(clicked => \&seeFilm, [$w, \%film_details]);
@@ -87,7 +99,7 @@ while(my $ref = $movies->getFilm()) {
 	
 	$current_col++;
 	
-	if($current_col == $max_cols) {
+	if($current_col == $opt{'max_cols'}) {
 		$current_row++;
 		$current_col = 0;
 	}
@@ -99,8 +111,13 @@ $w->show;
 
 Gtk2->main;
 
-#Happens after the user closes the app.
-$movies->cachePosters($home_folder);
+if($opt{'get_posters'}) {
+	#Happens after the user closes the app.
+	$movies->cachePosters($home_folder);
+}
+
+#Save Configuration
+store \%opt, $config_file;
 
 ##################################### Functions #####################################
 sub deleteEvent {
@@ -125,5 +142,4 @@ sub openContainingFolder {
 ###################################### TODO ###########################################
 # Get rating from IMDB, show it
 # Genre
-# File size
 # Running time

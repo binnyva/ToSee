@@ -17,15 +17,16 @@ BEGIN {
 use vars qw();
 
 sub new {
-	my ($package,@all_locations) = @_;
+	my ($package, $option) = @_;
 	my $self = bless({}, $package);
+	my %opt = %{$option};
 	
- 	@{$self->{'locations'}} = @all_locations;
+ 	$self->{'locations'} = $opt{'locations'};
 	$self->{'index'} = -1;
 	$self->{'movies'} = [];
 	
-	$self->{'video_player'} = 'smplayer';
-	$self->{'file_manager'} = 'konqueror';
+	$self->{'video_player'} = $opt{'video_player_app'};
+	$self->{'file_manager'} = $opt{'file_manager_app'};
 	
 	$self->findMovies();
 	return $self;
