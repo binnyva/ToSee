@@ -64,7 +64,7 @@ sub findMoviesInFolder {
 			$name	= $1;
 			$ext	= lc($2);
 		}
-		next if($name eq 'To See' || $name eq 'Give Bijoy');
+		next if($name eq 'To See' || $name eq 'Give Bijoy' || $name eq 'Problem' || $name eq 'Media Browser');
 		
 		if($allowed_extensions{$ext}) {
 			$name =~ s/[_\.]/ /g; #Convert _ and . to space
@@ -110,7 +110,7 @@ sub findMoviesInFolder {
 					$ext = $found_video_ext;
 				}
 			} else {
-				@file_details = stat($full_path);
+				@file_details = stat($full_path); # We need the file size of the file/folder.
 				$size = $file_details[7];
 			}
 			
@@ -154,6 +154,12 @@ sub getFilm {
 	}
 	
 	return undef;
+}
+
+sub resetFilmList {
+	my $self = shift;
+	$self->{'movies'} = [];
+	$self->{'index'} = 0;
 }
 
 sub cachePosters {
