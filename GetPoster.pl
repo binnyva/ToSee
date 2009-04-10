@@ -13,12 +13,7 @@ my $home_folder = dirname($0);
 $home_folder = getcwd() if($home_folder eq '.');
 my %active_film;
 
-my @locations = (
-	'/var/Data/Films',
-	'/mnt/c/Films',
-	'/mnt/d/Films',
-	'/mnt/x/Films',
-	'/mnt/x/Torrents/Films');
+my @locations = ('/mnt/x/Videos/Films');
 my $movies = new Films(@locations);
 my $total_films = $movies->getTotal();
 
