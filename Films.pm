@@ -180,8 +180,11 @@ sub cachePosters {
 sub getPoster {
 	my ($self, $film, $poster_folder) = @_;
 	
-	print "Fetching $film ... ";
+	print "Fetching Movie details for '$film' ... ";
 	use LWP::Simple;
+	use File::Temp qw/ tempfile tempdir /;
+	
+	my $temp_folder = dirname(tempdir());
 	my $film_details = new IMDB::Film(crit => $film, timeout => 60, 
 				cache => 1, cache_root => '/tmp/imdb_cache', cache_exp => '30 d');
 	if($film_details->status) {
@@ -197,11 +200,11 @@ sub getPoster {
 				next;
 			}
 		} else {
-			$image_file = File::Spec->join('/tmp/film_posters', $film . ".jpg");
+			$image_file = File::Spec->join($temp_folder, $film . ".jpg");
 		}
 		
 		if($url) {
-			print "Fetching Poster $url ... ";
+			print "Fetching Poster $url ... $image_file ... ";
 			my $cover_image = get($url);
 			open(IMG_OUT, ">" . $image_file) or die("Cannot write image file: $!");
 			print IMG_OUT $cover_image;
