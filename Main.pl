@@ -8,6 +8,7 @@ use File::Basename;
 use Films;
 use Cwd;
 use Storable;
+use Data::Dumper;
 
 ## Init
 my $home_folder = dirname($0);
@@ -20,14 +21,20 @@ if(-e $config_file) {
 	
 } else { # Default Options
 	%opt = (
-		'locations'	=> ['/var/Data/Films', '/mnt/c/Films', '/mnt/d/Films', '/mnt/x/Films', '/mnt/x/Torrents/Films'],
+		'locations'	=> [],
 		'show_poster' => 1,
 		'get_posters' => 1,
 		'max_cols' => 6,
-		'video_player_app' => 'smplayer',
-		'file_manager_app' => 'konqueror'
+		'video_player_app' => 'smplayer "%f"',
+		'file_manager_app' => 'konqueror "%d"'
 	);
 }
+
+my %app_info = (
+	'name'		=> 'ToSee',
+	'version'	=> '1.00.A',
+	'page'		=> 'http://www.bin-co.com/perl/apps/tosee/'
+);
 
 # Fetch the data
 my $movies = new Films(\%opt);
@@ -78,14 +85,13 @@ my $sub_menu_preferences = Gtk2::Menu->new();
 $menu_item_preferences->set_submenu($sub_menu_preferences);
 
 my $menu_item_preferences_folders = Gtk2::MenuItem->new("Set Folders");
-my $menu_item_preferences_programs = Gtk2::MenuItem->new("Configure Programs");
-my $menu_item_preferences_more = Gtk2::MenuItem->new("More Options");
+my $menu_item_preferences_optinos = Gtk2::MenuItem->new("Options");
 
 $sub_menu_preferences->append($menu_item_preferences_folders);
-$sub_menu_preferences->append($menu_item_preferences_programs);
-$sub_menu_preferences->append($menu_item_preferences_more);
+$sub_menu_preferences->append($menu_item_preferences_optinos);
 
 $menu_item_preferences_folders->signal_connect("activate", \&showFolderChooser, "preferences.set-folders");
+$menu_item_preferences_optinos->signal_connect("activate", \&showPreferencesDialog, "preferences.options");
 $menubar->append($menu_item_preferences);
 
 # Help Menu
@@ -130,6 +136,11 @@ store \%opt, $config_file;
 sub deleteEvent {
 	$w->destroy;
 	return TRUE;
+}
+
+sub info {
+	my $message = shift;
+	print $message . "\n";
 }
 
 sub seeFilm {
@@ -297,10 +308,8 @@ sub setPoster {
 }
 
 ###################################### Folder Choser Dialog ###########################
-my @movie_folder_locations;
 sub showFolderChooser {
 	my $dialog = Gtk2::Dialog->new('Choose Movie Folders', $w, [qw/modal destroy-with-parent/], 'gtk-ok' => 'accept', 'gtk-cancel' => 'cancel');
-	@movie_folder_locations = [];
 	foreach my $folder (@{$opt{'locations'}}) {
 		addNewFolderRow($dialog, $folder);
 	}
@@ -310,17 +319,35 @@ sub showFolderChooser {
 	
 	$dialog->show_all;
 	my $response_id = $dialog->run;
-	$dialog->destroy;
 
 	#User clicked ok - get all the folders in the list. And save it to the config variable.
 	if ($response_id eq "accept") {
 		my @new_location_list;
-		foreach my $txt_location (@movie_folder_locations) {
-			my $loc = $txt_location->get_text();
-			push(@new_location_list, $loc) if($loc);
+		
+		my @hboxes = $dialog->vbox->get_children();
+		for(my $i=0; $i<scalar(@hboxes)-2; $i++) {
+			my @widgets = $hboxes[$i]->get_children();
+			my $loc = $widgets[0]->get_text();
+			next unless $loc;
+			
+			# Check the validity of the folder.
+			if(-d $loc) { # Is it a folder?
+				# See if its already in the list...
+				my $found = 0;
+				foreach my $location (@new_location_list) {
+					if($location eq $loc) {
+						$found++;
+						last;
+					}
+				}
+				
+				push(@new_location_list, $loc) if(!$found);
+			}
 		}
-		@{$opt{'locations'}} = @new_location_list;
+ 		@{$opt{'locations'}} = @new_location_list;
 	}
+	info "Destroying Folder Choser Dialog...";
+	$dialog->destroy;
 }
 
 # Create a new 'Text Entry - Browse - Delete' row.
@@ -334,7 +361,6 @@ sub addNewFolderRow {
 	my $but_browse = Gtk2::Button->new("Browse");
 	my $but_delete = Gtk2::Button->new("Delete");
 	
-	push(@movie_folder_locations, $txt_location);
 	$hbox->add($txt_location);
 	$hbox->add($but_browse);
 	$hbox->add($but_delete);
@@ -374,14 +400,99 @@ sub selectFolder {
 	#User clicked ok - get all the folders in the list. And save it to the config variable.
 	if ($response_id eq "accept") {
 		$txt_location->set_text($file_dialog->get_filename());
-		$file_dialog->destroy;
 		# If the folder path was empty, it was the last row. As its filled now, add a new last row...
 		if($current_folder eq "") {
 			my $hbox = addNewFolderRow($dialog, '');
 			$hbox->show_all;
 		}
 	}
+	$file_dialog->destroy;
+}
+
+###################################### Preferences Dialog #############################
+
+sub showPreferencesDialog {
+	my $dialog = Gtk2::Dialog->new('More Options', $w, [qw/modal destroy-with-parent/], 'gtk-ok' => 'accept', 'gtk-cancel' => 'cancel');
 	
+	my $frm_ui_options = Gtk2::Frame->new("UI Options");
+	my $vbox_ui_options = Gtk2::VBox->new(FALSE);
+	
+	# Get poster from IMDB or not - do you have internet or no?
+	my $hbox_get_poster = Gtk2::HBox->new(FALSE);
+	my $chk_get_poster = Gtk2::CheckButton->new("Get Posters From IMDB");
+	$chk_get_poster->set_active($opt{'get_posters'});
+	$ttip_all->set_tip($chk_get_poster, "Net connection needed");
+	$hbox_get_poster->add($chk_get_poster);
+	$vbox_ui_options->add($hbox_get_poster);
+	
+	# Max number of cols.
+	my $hbox_column_count = Gtk2::HBox->new(FALSE);
+	my $lab_column_count = Gtk2::Label->new("Maximum Number of Columns");
+	my $spin_column_count = Gtk2::SpinButton->new(Gtk2::Adjustment->new($opt{'max_cols'}, 2,15, 1,1, 5), 1, 0);
+	$hbox_column_count->add($lab_column_count);
+	$hbox_column_count->add($spin_column_count);
+	$vbox_ui_options->add($hbox_column_count);
+	
+	$frm_ui_options->add($vbox_ui_options);
+	$dialog->vbox->add($frm_ui_options);
+	my $lab_spacer = Gtk2::Label->new("");
+	$dialog->vbox->add($lab_spacer);
+
+	my $frm_applications = Gtk2::Frame->new("Applications");
+	my $vbox_application = Gtk2::VBox->new(FALSE);
+	
+	#Choose the video player application
+	my $hbox_video_player = Gtk2::HBox->new(FALSE);
+	my $lab_video_player = Gtk2::Label->new("Video Player");
+	my $txt_video_player = Gtk2::Entry->new();
+	$txt_video_player->set_text($opt{'video_player_app'});
+	$hbox_video_player->add($lab_video_player);
+	$hbox_video_player->add($txt_video_player);
+	$vbox_application->add($hbox_video_player);
+	
+	#Choose the file manager application - for the 'Open Folder'
+	my $hbox_file_manager = Gtk2::HBox->new(FALSE);
+	my $lab_file_manager = Gtk2::Label->new("File Manager");
+	my $txt_file_manager = Gtk2::Entry->new();
+	$txt_file_manager->set_text($opt{'file_manager_app'});
+	$hbox_file_manager->add($lab_file_manager);
+	$hbox_file_manager->add($txt_file_manager);
+	$vbox_application->add($hbox_file_manager);
+	
+	my $lab_variables = Gtk2::Label->new("Variables:\n%f - Full File Path.\n%d - Directory of movie\n%n - Name of the movie");
+	$lab_variables->set_justify('left');
+	$vbox_application->add($lab_variables);
+	
+	$frm_applications->add($vbox_application);
+	$dialog->vbox->add($frm_applications);
+	
+	$dialog->show_all;
+	my $response_id = $dialog->run;
+	
+	if ($response_id eq "accept") {
+		my $get_posters = ($chk_get_poster->get_active()) ? 1 : 0;
+		
+		$opt{'get_posters'} = $get_posters;
+		$opt{'show_poster'} = $get_posters;
+		$opt{'max_cols'} = $spin_column_count->get_value_as_int();
+		$opt{'file_manager_app'} = $txt_file_manager->get_text();
+		$opt{'video_player_app'} = $txt_video_player->get_text();
+		
+		info "Saved Preferences";
+	}
+	info "Destroying Preferences dialog";
+	$dialog->destroy;
+}
+
+sub showAboutDialog {
+	my $dialog = Gtk2::Dialog->new('About ToSee', $w, [qw/modal destroy-with-parent/], 'gtk-ok' => 'accept');
+	
+	my $lab_info = Gtk2::Label->new("ToSee " . $app_info{'version'} . "\nBy Binny V A(http://binnyva.com/)");
+	$dialog->vbox->add($lab_info);
+	
+	$dialog->show_all;
+	$dialog->run;
+	$dialog->destroy;
 }
 
 ###################################### TODO ###########################################

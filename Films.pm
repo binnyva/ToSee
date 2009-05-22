@@ -225,26 +225,28 @@ sub getPoster {
 
 sub openFilm {
 	my ($self, %film) = @_;
-	my $tiker_status = 'Seeing film "' . $film{'name'} . '"' . "\n";
-	`tiker $tiker_status`;
 	
-	if($film{'type'} ne 'dir') {
-		system $self->{'file_manager'} . ' "' . dirname($film{'path'}) . '" &'; # Open the folder
-		exec $self->{'video_player'}, $film{'path'}; # and play the file
-	} else {
-		exec $self->{'file_manager'}, $film{'path'};
-	}
+	my $command = $self->{'video_player'};
 	
+	my $directory = dirname($film{'path'});
+	$command =~ s/%d/$directory/g;
+	$command =~ s/%f/$film{'path'}/g;
+	$command =~ s/%n/$film{'name'}/g;
+	
+	exec $command;
 }
 
 sub openContainingFolder {
 	my ($self, %film) = @_;
 	
-	if($film{'type'} ne 'dir') {
-		system $self->{'file_manager'} . ' "' . dirname($film{'path'}) . '" &'; # Open the folder
-	} else {
-		exec $self->{'file_manager'}, $film{'path'};
-	}
+	my $command = $self->{'file_manager'};
+	
+	my $directory = dirname($film{'path'});
+	$command =~ s/%d/$directory/g;
+	$command =~ s/%f/$film{'path'}/g;
+	$command =~ s/%n/$film{'name'}/g;
+	
+	exec $command;
 }
 
 1;
