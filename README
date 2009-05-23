@@ -1,0 +1,9 @@
+ToSee
+1.00.A Alpha
+
+ToSee is a application that will go through specified folders in your HDD and find all the movies in them. Then it displays all the movies with their poster. 
+
+Needed Modules: Gtk2, IMDB::Film
+
+Binny V A
+http://binnyva.com/

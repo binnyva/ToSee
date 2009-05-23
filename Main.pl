@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+# ToSee is a application that will go through specified folders in your HDD and find all the movies in them. Then it displays all the movies with their poster.
 
 use strict;
 use Glib qw/TRUE FALSE/;
@@ -87,8 +88,8 @@ $menu_item_preferences->set_submenu($sub_menu_preferences);
 my $menu_item_preferences_folders = Gtk2::MenuItem->new("Set Folders");
 my $menu_item_preferences_optinos = Gtk2::MenuItem->new("Options");
 
-$sub_menu_preferences->append($menu_item_preferences_folders);
 $sub_menu_preferences->append($menu_item_preferences_optinos);
+$sub_menu_preferences->append($menu_item_preferences_folders);
 
 $menu_item_preferences_folders->signal_connect("activate", \&showFolderChooser, "preferences.set-folders");
 $menu_item_preferences_optinos->signal_connect("activate", \&showPreferencesDialog, "preferences.options");
