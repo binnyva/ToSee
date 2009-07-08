@@ -46,6 +46,7 @@ my $w = new Gtk2::Window('toplevel');
 $w->signal_connect(delete_event => \&deleteEvent);
 $w->signal_connect(destroy => sub { Gtk2->main_quit; });
 $w->set_default_size(800, 600);
+$w->set_title("ToSee v" . $app_info{'version'}); 
 
 my $vbox_main = new Gtk2::VBox(0, 0);
 $w->add($vbox_main);
@@ -139,11 +140,13 @@ sub deleteEvent {
 	return TRUE;
 }
 
+# For debug messages
 sub info {
 	my $message = shift;
 	print $message . "\n";
 }
 
+# Open the film - at least call the function in the Films library package. Called when the movie button is clicked.
 sub seeFilm {
 	my $button = shift;
 	my @data = shift;
@@ -151,6 +154,7 @@ sub seeFilm {
 	$movies->openFilm(%film);
 }
 
+# Open the folder which has the movie. Called when the 'Open Folder' button is clicked.
 sub openContainingFolder {
 	my $button = shift;
 	my @data = shift;
@@ -220,6 +224,7 @@ sub loadFilms {
 	}
 }
 
+# Called from File > Refresh. Refreshes the interface.
 sub refreshMovieList {
 	$movies->resetFilmList;
 	$movies->findMovies;
@@ -277,6 +282,7 @@ sub showGetPosterDialog {
 	$dialog->destroy;
 }
 
+# Get the poster using the film details provided as the argument.
 sub getPoster {
 	my $button = shift;
 	my @data = shift;
@@ -295,6 +301,7 @@ sub getPoster {
 	}
 }
 
+# Save the poster to the 'Poster/' folder - set the file name as the movie name.
 sub setPoster {
 	my $poster_folder = File::Spec->join($home_folder, 'Posters');
 	my $image_file = File::Spec->join($poster_folder, $active_film{'film_name'} . ".jpg");
@@ -374,6 +381,7 @@ sub addNewFolderRow {
 	return $hbox;
 }
 
+# Removes a row of 'entry-browse-delete' path.
 sub removeRow {
 	my $button = shift;
 	my @data = shift;
@@ -387,6 +395,7 @@ sub removeRow {
 	}
 }
 
+# Open the folder chooser. 
 sub selectFolder {
 	my $button = shift;
 	my @data = shift;
@@ -411,7 +420,7 @@ sub selectFolder {
 }
 
 ###################################### Preferences Dialog #############################
-
+# Opens the Preferences dialog. 
 sub showPreferencesDialog {
 	my $dialog = Gtk2::Dialog->new('More Options', $w, [qw/modal destroy-with-parent/], 'gtk-ok' => 'accept', 'gtk-cancel' => 'cancel');
 	
