@@ -38,6 +38,8 @@ sub findMovies {
 	foreach my $path (@{$self->{'locations'}}) {
 		$self->findMoviesInFolder($path);
 		$self->findMoviesInFolder(File::Spec->join($path, 'To See'));
+		$self->findMoviesInFolder(File::Spec->join($path, 'Give Bijoy'));
+		$self->findMoviesInFolder(File::Spec->join($path, 'Written'));
 	}
 }
 
@@ -64,7 +66,7 @@ sub findMoviesInFolder {
 			$name	= $1;
 			$ext	= lc($2);
 		}
-		next if($name eq 'To See' || $name eq 'Give Bijoy' || $name eq 'Problem' || $name eq 'Media Browser');
+		next if($name eq 'To See' || $name eq 'Give Bijoy' || $name eq 'Written' || $name eq 'Problem' || $name eq 'Media Browser');
 		
 		if($allowed_extensions{$ext}) {
 			$name =~ s/[_\.]/ /g; #Convert _ and . to space
